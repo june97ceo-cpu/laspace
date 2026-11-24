@@ -46,7 +46,7 @@ Mật khẩu luôn được lưu dạng **PBKDF2 hash có salt** (120.000 vòng,
         ├── App.tsx, admin.tsx, features.tsx, timer.tsx, settings.tsx,
         ├── lib.tsx, i18n.ts, shared.tsx, toast.tsx, contacts.tsx,
         ├── deploy.tsx, deploy-package.ts, globals.d.ts, theme.css
-        └── assets/logo.png
+        └── logo.ts        # Logo nhúng base64 data URI (không có file ảnh riêng)
 ```
 
 ## Frontend đã hoàn thiện sẵn trong gói
@@ -56,8 +56,11 @@ chạy trong Muse, đã được chuyển đổi để chạy độc lập trên
 cần copy tay nữa:
 
 1. Toàn bộ `client/src/` của bản Muse (App, admin, features, lib, i18n,
-   settings, shared, timer, toast, contacts, deploy, theme.css,
-   assets/logo.png) đã nằm sẵn trong `frontend/src/`.
+   settings, shared, timer, toast, contacts, deploy, theme.css) đã nằm sẵn
+   trong `frontend/src/`. Riêng logo không để dạng file ảnh nhị phân
+   (`assets/logo.png`) mà nhúng sẵn thành chuỗi base64 data URI trong
+   `frontend/src/logo.ts` — đúng từng byte của logo.png gốc — để repo
+   không cần file nhị phân nào mà bản build vẫn có logo.
 2. `frontend/src/api.ts` chính là file `frontend/api.ts`: mọi lời gọi
    `api.<action>(args)` trở thành `POST /api/<action>` tới Worker.
 3. `main.tsx` không còn `spaceQueryClient` của `@hatch/space-sdk`: dùng
@@ -71,8 +74,8 @@ cần copy tay nữa:
    đã có trong `frontend/package.json`).
 
 Đã kiểm chứng: `npm run build:frontend` build thành công ra `frontend/dist`
-(index.html + JS + CSS + logo), và `wrangler.toml` trỏ `[assets]` đúng vào
-`./frontend/dist`.
+(index.html + JS — logo đã nhúng trong JS dạng data URI — + CSS), và
+`wrangler.toml` trỏ `[assets]` đúng vào `./frontend/dist`.
 
 ## Các bước deploy (làm 1 lần)
 

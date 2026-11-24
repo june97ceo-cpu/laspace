@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { setFailureNoticeText } from "./api";
 import { api } from "./api";
 import { Toaster, pushToast } from "./toast";
-import logoUrl from "./assets/logo.png";
+import logoUrl from "./logo";
 import {
 FEATURES,
 FEATURE_TEXT,
