@@ -6,12 +6,13 @@
 // non-2xx response throws an Error carrying the server's message (the same
 // contract the UI already handles).
 //
-// Usage: copy the Muse client's src/ files into frontend/src/, replace
-// src/api.ts with this file, and delete the "@hatch/space-sdk" imports:
-//   - main.tsx: use a plain QueryClient from @tanstack/react-query
-//   - shared.tsx / App.tsx: replace actionFields/FIELDS with plain input
-//     attributes (maxLength etc. are listed in MIGRATION-NOTES.md)
-//   - toast: setFailureNoticeText is a no-op stub below.
+// This file is already in place at frontend/src/api.ts (the whole Muse
+// client's src/ ships in frontend/src/, adapted for Cloudflare):
+//   - main.tsx uses a plain QueryClient from @tanstack/react-query and
+//     renders into #root — no "@hatch/space-sdk" anywhere
+//   - the FIELDS macro spreads were replaced with plain input attributes
+//     (maxLength / min / max / required) matching server/src/actions.ts
+//   - setFailureNoticeText / fileToBase64 are the stubs below
 
 type Args = Record<string, unknown>;
 
@@ -35,6 +36,15 @@ export const api = new Proxy(
     get: (_target, prop: string) => (args: Args) => call(prop, args),
   },
 ) as Record<string, <T = unknown>(args: Args) => Promise<T>>;
+
+// Type-level stubs for the aliases lib.tsx derives from the Muse SDK's
+// typed client (ApiResponse<typeof api, "me"> etc.). The Cloudflare
+// transport is untyped at runtime, so these resolve to `any` and the UI's
+// response types stay permissive — the Worker returns the same JSON shapes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiResponse<_Client = unknown, _Action = string> = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ApiRequest<_Action = string> = any;
 
 // Stubs for the two SDK helpers the UI imports, so components compile
 // unchanged on Cloudflare.

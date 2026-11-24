@@ -40,26 +40,39 @@ Mật khẩu luôn được lưu dạng **PBKDF2 hash có salt** (120.000 vòng,
     ├── vite.config.ts
     ├── index.html
     ├── api.ts             # Transport thay cho Muse SDK: POST /api/<action>
-    └── src/               # ← copy từ client/src của bản Muse (xem dưới)
+    └── src/               # Toàn bộ giao diện, ĐÃ có sẵn trong gói (xem dưới)
+        ├── main.tsx       # Render vào #root, QueryClient thường
+        ├── api.ts         # = bản sao của frontend/api.ts
+        ├── App.tsx, admin.tsx, features.tsx, timer.tsx, settings.tsx,
+        ├── lib.tsx, i18n.ts, shared.tsx, toast.tsx, contacts.tsx,
+        ├── deploy.tsx, deploy-package.ts, globals.d.ts, theme.css
+        └── assets/logo.png
 ```
 
-## Đưa frontend vào
+## Frontend đã hoàn thiện sẵn trong gói
 
-Thư mục `frontend/src/` lấy nguyên từ bản LaSpace đang chạy trong Muse:
+Thư mục `frontend/src/` đã chứa **toàn bộ** giao diện của bản LaSpace đang
+chạy trong Muse, đã được chuyển đổi để chạy độc lập trên Cloudflare — không
+cần copy tay nữa:
 
-1. Copy toàn bộ `client/src/` (App.tsx, admin.tsx, features.tsx, lib.tsx,
-   i18n.ts, settings.tsx, shared.tsx, timer.tsx, toast.tsx, contacts.tsx,
-   theme.css, assets/logo.png) vào `frontend/src/`.
-2. Thay `frontend/src/api.ts` bằng file `frontend/api.ts` trong gói này
-   (đã có sẵn bản sao ở đây — copy đè vào `src/api.ts`).
-3. Trong `main.tsx`: bỏ `spaceQueryClient` của `@hatch/space-sdk`, dùng
+1. Toàn bộ `client/src/` của bản Muse (App, admin, features, lib, i18n,
+   settings, shared, timer, toast, contacts, deploy, theme.css,
+   assets/logo.png) đã nằm sẵn trong `frontend/src/`.
+2. `frontend/src/api.ts` chính là file `frontend/api.ts`: mọi lời gọi
+   `api.<action>(args)` trở thành `POST /api/<action>` tới Worker.
+3. `main.tsx` không còn `spaceQueryClient` của `@hatch/space-sdk`: dùng
    `new QueryClient()` từ `@tanstack/react-query`, bỏ class/data-attr của
-   SDK và render vào `#root`.
-4. Trong `shared.tsx` / các form dùng `FIELDS` (macro của Muse SDK): thay
-   bằng thuộc tính thường (`maxLength`, `required`…) — giới hạn từng field
-   nằm trong `server/src/actions.ts` của bản Muse.
-5. `theme.css`: bỏ dòng `@import "tailwindcss-safe-area"` nếu không cài
-   package đó (đã có trong `frontend/package.json` nên giữ nguyên cũng được).
+   SDK và render thẳng vào `#root` (phần tử gốc `.laspace-root` do App tự
+   render; safe-area dùng utilities của `tailwindcss-safe-area`).
+4. Mọi form dùng macro `FIELDS` của Muse SDK đã được thay bằng thuộc tính
+   thường (`maxLength`, `min`, `max`, `required`…) ngay tại từng input,
+   đúng giới hạn trong `server/src/actions.ts` của bản Muse.
+5. `theme.css` giữ nguyên (kể cả `@import "tailwindcss-safe-area"` — package
+   đã có trong `frontend/package.json`).
+
+Đã kiểm chứng: `npm run build:frontend` build thành công ra `frontend/dist`
+(index.html + JS + CSS + logo), và `wrangler.toml` trỏ `[assets]` đúng vào
+`./frontend/dist`.
 
 ## Các bước deploy (làm 1 lần)
 
