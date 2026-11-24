@@ -4,17 +4,18 @@
 //   POST /api/:action   — the app API (same action names + payloads as the
 //                         Muse server build, so the React client only swaps
 //                         its transport: see frontend/src/api.ts)
-//   GET  /avatars/:key  — profile pictures stored in R2
+//   GET  /avatars/:id   — profile pictures stored as base64 in D1
+//                         (users.avatar_data); no R2 bucket is used
 //   everything else     — the static frontend (Workers Static Assets, SPA)
 //
-// Storage: D1 (binding DB) for accounts + learning data, R2 (binding
-// AVATARS) for avatar images. Passwords are verified against salted PBKDF2
+// Storage: D1 (binding DB) only — accounts, learning data and avatar
+// images all live there, so the app runs on the free Pages + Workers + D1
+// tier with no R2. Passwords are verified against salted PBKDF2
 // hashes (120k iterations, SHA-256) — identical parameters to the Muse
 // build, so existing password hashes stay valid if data is migrated.
 
 export interface Env {
   DB: D1Database;
-  AVATARS: R2Bucket;
   ASSETS: Fetcher;
   APP_ORIGIN?: string;
 }
@@ -91,7 +92,7 @@ interface UserRow {
   language: string;
   native_language: string;
   learning_language: string;
-  avatar_blob_key: string;
+  avatar_data: string;
   theme: string;
   sheet_id: string;
   sheet_connected: number;
@@ -131,7 +132,7 @@ function publicUser(env: Env, origin: string, u: UserRow) {
     language: u.language,
     nativeLanguage: u.native_language ?? "",
     learningLanguage: u.learning_language ?? "",
-    avatarUrl: u.avatar_blob_key ? `${env.APP_ORIGIN || origin}/avatars/${u.avatar_blob_key}` : "",
+    avatarUrl: u.avatar_data ? `${env.APP_ORIGIN || origin}/avatars/${u.id}` : "",
     theme: u.theme,
     sheetId: u.sheet_id,
     sheetConnected: u.sheet_connected === 1,
@@ -352,19 +353,19 @@ async function handleAction(env: Env, origin: string, action: string, a: Args): 
     case "updateAvatar": {
       const me = await requireUser(env, token);
       const data = str(a, "dataBase64");
-      const oldKey = me.avatar_blob_key ?? "";
       if (data === "") {
-        if (oldKey) await env.AVATARS.delete(oldKey).catch(() => undefined);
-        await db.prepare("UPDATE users SET avatar_blob_key = '' WHERE id = ?").bind(me.id).run();
+        // Remove: clear the stored picture; the UI falls back to the
+        // initial-letter avatar.
+        await db.prepare("UPDATE users SET avatar_data = '' WHERE id = ?").bind(me.id).run();
       } else {
         const mime = str(a, "mimeType");
         need(mime === "image/jpeg" || mime === "image/png", "Ảnh đại diện cần là file JPG hoặc PNG nhé.");
         const bytes = base64ToBytes(data);
         need(bytes && bytes.length > 0 && bytes.length <= 2_500_000, "Ảnh chưa hợp lệ hoặc quá lớn (tối đa khoảng 2,5 MB).");
-        const key = `avatars/user-${me.id}-${randomHex(6)}`;
-        await env.AVATARS.put(key, bytes, { httpMetadata: { contentType: mime } });
-        await db.prepare("UPDATE users SET avatar_blob_key = ? WHERE id = ?").bind(key, me.id).run();
-        if (oldKey) await env.AVATARS.delete(oldKey).catch(() => undefined);
+        // No R2: keep the picture in D1 as a data URI, served back by
+        // GET /avatars/<userId>.
+        await db.prepare("UPDATE users SET avatar_data = ? WHERE id = ?")
+          .bind(`data:${mime};base64,${data}`, me.id).run();
       }
       const u = await db.prepare("SELECT * FROM users WHERE id = ?").bind(me.id).first<UserRow>();
       return json({ user: publicUser(env, origin, u!) });
@@ -815,17 +816,24 @@ export default {
     const url = new URL(request.url);
     const origin = url.origin;
 
-    // Avatar files from R2.
+    // Avatar files: the picture lives in D1 as a base64 data URI on the
+    // user row (no R2), so decode and serve it straight from the database.
     if (request.method === "GET" && url.pathname.startsWith("/avatars/")) {
-      const key = decodeURIComponent(url.pathname.slice("/avatars/".length));
-      if (!key || key.includes("..")) return new Response("Not found", { status: 404 });
-      const obj = await env.AVATARS.get(key);
-      if (!obj) return new Response("Not found", { status: 404 });
-      const headers = new Headers();
-      obj.writeHttpMetadata(headers);
-      headers.set("etag", obj.httpEtag);
-      headers.set("cache-control", "public, max-age=86400");
-      return new Response(obj.body, { headers });
+      const id = Number.parseInt(url.pathname.slice("/avatars/".length), 10);
+      if (!Number.isFinite(id) || id <= 0) return new Response("Not found", { status: 404 });
+      const row = await env.DB.prepare("SELECT avatar_data FROM users WHERE id = ?")
+        .bind(id).first<{ avatar_data: string }>();
+      const dataUri = row?.avatar_data ?? "";
+      const match = /^data:(image\/(?:jpeg|png));base64,(.+)$/.exec(dataUri);
+      if (!match) return new Response("Not found", { status: 404 });
+      const bytes = base64ToBytes(match[2]!);
+      if (!bytes) return new Response("Not found", { status: 404 });
+      return new Response(bytes as BodyInit, {
+        headers: {
+          "content-type": match[1]!,
+          "cache-control": "public, max-age=3600",
+        },
+      });
     }
 
     // API: POST /api/<action> with a JSON body (the action args).

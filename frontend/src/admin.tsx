@@ -392,7 +392,7 @@ export function adminNavItems(
       badge: data.contacts.length ? String(data.contacts.length) : undefined,
     },
     { id: "users", label: tx(lang, "Quản lý người dùng", "User management"), hint: tx(lang, "Xem thông tin user, cấp quyền, nâng cấp không gian, xem và xóa tài khoản", "View user info, grant permissions, upgrade spaces, view and delete accounts"), icon: "users", badge: String(data.users.length) },
-    { id: "deploy", label: tx(lang, "Triển khai Cloudflare", "Cloudflare deployment"), hint: tx(lang, "Gói mã nguồn Pages + Workers + D1 + R2, repo GitHub và các bước tạo link cho người dùng thử", "Pages + Workers + D1 + R2 source package, the GitHub repo and the steps to a public trial link"), icon: "link", badge: "GitHub" },
+    { id: "deploy", label: tx(lang, "Triển khai Cloudflare", "Cloudflare deployment"), hint: tx(lang, "Gói mã nguồn Pages + Workers + D1, repo GitHub và các bước tạo link cho người dùng thử", "Pages + Workers + D1 source package, the GitHub repo and the steps to a public trial link"), icon: "link", badge: "GitHub" },
   ];
 }
 

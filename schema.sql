@@ -24,7 +24,10 @@ CREATE TABLE IF NOT EXISTS users (
   language TEXT NOT NULL DEFAULT 'vi',
   native_language TEXT NOT NULL DEFAULT '',
   learning_language TEXT NOT NULL DEFAULT '',
-  avatar_blob_key TEXT NOT NULL DEFAULT '',
+  -- Profile picture stored directly in D1 as a data URI
+  -- ("data:image/png;base64,..."), '' = none (UI falls back to the
+  -- initial-letter avatar). No R2 bucket is used anywhere.
+  avatar_data TEXT NOT NULL DEFAULT '',
   theme TEXT NOT NULL DEFAULT 'dark',
   sheet_id TEXT NOT NULL DEFAULT '',
   sheet_connected INTEGER NOT NULL DEFAULT 0,

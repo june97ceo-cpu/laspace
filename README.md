@@ -1,4 +1,4 @@
-# LaSpace — Cloudflare deployment (Pages + Workers + D1 + R2)
+# LaSpace — Cloudflare deployment (Pages + Workers + D1, miễn phí, không dùng R2)
 
 **LaSpace — Your Language, Your Space.** Không gian học ngôn ngữ cá nhân:
 mỗi người dùng có tài khoản riêng, tạo tối đa 3 không gian học (admin nâng
@@ -14,7 +14,7 @@ Repo đích: https://github.com/june97ceo-cpu/laspace.git
 | Giao diện | **Pages / Workers Static Assets** | Bản build tĩnh của React app (`frontend/dist`) |
 | Máy chủ API | **Workers** | `worker/src/index.ts` — toàn bộ API tại `/api/<action>` |
 | Cơ sở dữ liệu | **D1** | Tài khoản, không gian, từ vựng, ghi nhớ, buổi học, mục tiêu, lịch, donate (`schema.sql`) |
-| Lưu ảnh | **R2** | Ảnh đại diện người dùng, phục vụ tại `/avatars/<key>` |
+| Lưu ảnh | **D1 (base64)** | Ảnh đại diện lưu dạng base64 ngay trong bảng `users` (cột `avatar_data`), Worker phục vụ tại `/avatars/<id người dùng>`; khi chưa có ảnh thì giao diện dùng chữ cái đầu tên |
 
 Một Worker duy nhất phục vụ cả API và giao diện (cấu hình trong
 `wrangler.toml`), nên chỉ cần **một lần deploy** là có link công khai dạng
@@ -29,9 +29,9 @@ Mật khẩu luôn được lưu dạng **PBKDF2 hash có salt** (120.000 vòng,
 
 ```
 .
-├── wrangler.toml          # Bindings: D1 (DB), R2 (AVATARS), static assets
+├── wrangler.toml          # Bindings: D1 (DB) + static assets — không có R2
 ├── schema.sql             # D1 schema đầy đủ (12 bảng) — chạy 1 lần lúc tạo DB
-├── package.json           # Scripts: dev / deploy / db:init / r2:create
+├── package.json           # Scripts: dev / deploy / db:init
 ├── worker/
 │   └── src/index.ts       # Worker API: auth, spaces, words, notes,
 │                          # sessions, goals, calendar, donations, admin
@@ -85,16 +85,15 @@ cd laspace
 npm install
 npx wrangler login
 
-# 1) Tạo database D1 và bucket R2
-npx wrangler d1 create laspace            # copy database_id được in ra
-npx wrangler r2 bucket create laspace-avatars
+# 1) Database D1 "laspace" ĐÃ được tạo sẵn trên Cloudflare, và
+#    database_id thật đã điền sẵn trong wrangler.toml:
+#      951a0597-ed73-44c1-ad5e-3ab8af78e648
+#    (Không cần tạo lại, và KHÔNG dùng R2 nên không cần bucket hay thẻ.)
 
-# 2) Dán database_id vào wrangler.toml (thay REPLACE_WITH_D1_ID)
-
-# 3) Tạo bảng trong D1
+# 2) Tạo bảng trong D1
 npm run db:init
 
-# 4) Build giao diện + deploy Worker
+# 3) Build giao diện + deploy Worker
 npm run deploy
 # → Cloudflare in ra link https://laspace.<...>.workers.dev
 ```
@@ -127,7 +126,7 @@ bản mới nhất.
   (cùng schema, cùng thuật toán băm mật khẩu, cùng tên action). Worker bao
   phủ toàn bộ tính năng người dùng (đăng ký/đăng nhập, không gian, từ vựng
   + flashcards, ghi nhớ, buổi học, mục tiêu, lịch học, donate, ảnh đại
-  diện R2) và phần quản trị cốt lõi (tổng quan, bật/tắt donate, giới hạn
+  diện base64 trong D1) và phần quản trị cốt lõi (tổng quan, bật/tắt donate, giới hạn
   không gian, bật/tắt tính năng, tài khoản ngân hàng, xác nhận donate,
   khóa/đổi vai trò user, cấp mật khẩu tạm, danh sách quên mật khẩu).
 - Các action quản trị còn lại của bản Muse (phân quyền chi tiết từng user,

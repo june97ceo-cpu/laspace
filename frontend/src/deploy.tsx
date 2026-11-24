@@ -4,7 +4,7 @@ import { tx } from "./i18n";
 import { CLOUDFLARE_PACKAGE_FILES } from "./deploy-package";
 
 // Cloudflare deployment centre (admin only): the LaSpace source has been
-// prepared as a Cloudflare Pages + Workers + D1 + R2 package in the
+// prepared as a Cloudflare Pages + Workers + D1 package in the
 // `cloudflare/` folder of this project, ready to push to the user's GitHub
 // repo. This page is the checklist + the exact commands, so the owner can
 // finish the last mile (GitHub push needs their own GitHub login, which
@@ -25,16 +25,12 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "laspace"
-database_id = "REPLACE_WITH_D1_ID"
-
-[[r2_buckets]]
-binding = "AVATARS"
-bucket_name = "laspace-avatars"`;
+database_id = "951a0597-ed73-44c1-ad5e-3ab8af78e648"`;
 
 const PUSH_COMMANDS = `# Mở terminal ngay trong thư mục vừa giải nén từ laspace-cloudflare.zip
 git init
 git add -A
-git commit -m "LaSpace — Cloudflare Pages + Workers + D1 + R2"
+git commit -m "LaSpace — Cloudflare Pages + Workers + D1"
 git branch -M main
 git remote add origin https://github.com/june97ceo-cpu/laspace.git
 git push -u origin main`;
@@ -132,9 +128,8 @@ function downloadPackageZip() {
 
 const DEPLOY_COMMANDS = `npm install
 npx wrangler login
-npx wrangler d1 create laspace
-npx wrangler r2 bucket create laspace-avatars
-# Dán database_id vừa tạo vào wrangler.toml (REPLACE_WITH_D1_ID)
+# Database D1 "laspace" đã tạo sẵn trên Cloudflare, database_id đã điền
+# sẵn trong wrangler.toml — không cần tạo lại, không dùng R2.
 npm run db:init
 npm run deploy`;
 
@@ -171,10 +166,10 @@ function CopyBlock({ label, code }: { label: string; code: string }) {
 
 const PACKAGE_FILES: { path: string; descVi: string; descEn: string }[] = [
   { path: "cloudflare/README.md", descVi: "Hướng dẫn deploy từng bước (tiếng Việt)", descEn: "Step-by-step deploy guide (Vietnamese)" },
-  { path: "cloudflare/wrangler.toml", descVi: "Cấu hình Worker + bindings D1 / R2 / Static Assets", descEn: "Worker config + D1 / R2 / Static Assets bindings" },
-  { path: "cloudflare/schema.sql", descVi: "Schema D1 đầy đủ: 12 bảng (users, spaces, words, notes, sessions, goals, calendar_events, donations…)", descEn: "Full D1 schema: 12 tables (users, spaces, words, notes, sessions, goals, calendar_events, donations…)" },
-  { path: "cloudflare/worker/src/index.ts", descVi: "Worker API: toàn bộ /api/<action> — auth PBKDF2, spaces, từ vựng + flashcards, ghi nhớ, buổi học, mục tiêu, lịch học, donate, admin cốt lõi; ảnh đại diện qua R2 tại /avatars/<key>", descEn: "Worker API: every /api/<action> — PBKDF2 auth, spaces, vocab + flashcards, notes, sessions, goals, calendar, donations, core admin; avatars via R2 at /avatars/<key>" },
-  { path: "cloudflare/package.json", descVi: "Scripts: dev, deploy, db:init, db:init:local, r2:create", descEn: "Scripts: dev, deploy, db:init, db:init:local, r2:create" },
+  { path: "cloudflare/wrangler.toml", descVi: "Cấu hình Worker + bindings D1 / Static Assets (database_id thật đã điền sẵn, không có R2)", descEn: "Worker config + D1 / Static Assets bindings (real database_id already filled in, no R2)" },
+  { path: "cloudflare/schema.sql", descVi: "Schema D1 đầy đủ: 12 bảng (users, spaces, words, notes, sessions, goals, calendar_events, donations…); ảnh đại diện lưu base64 trong cột users.avatar_data", descEn: "Full D1 schema: 12 tables (users, spaces, words, notes, sessions, goals, calendar_events, donations…); profile pictures stored as base64 in users.avatar_data" },
+  { path: "cloudflare/worker/src/index.ts", descVi: "Worker API: toàn bộ /api/<action> — auth PBKDF2, spaces, từ vựng + flashcards, ghi nhớ, buổi học, mục tiêu, lịch học, donate, admin cốt lõi; ảnh đại diện lưu base64 trong D1, phục vụ tại /avatars/<id>", descEn: "Worker API: every /api/<action> — PBKDF2 auth, spaces, vocab + flashcards, notes, sessions, goals, calendar, donations, core admin; avatars stored as base64 in D1, served at /avatars/<id>" },
+  { path: "cloudflare/package.json", descVi: "Scripts: dev, deploy, db:init, db:init:local", descEn: "Scripts: dev, deploy, db:init, db:init:local" },
   { path: "cloudflare/frontend/api.ts", descVi: "Transport cho frontend trên Cloudflare: thay Muse SDK bằng POST /api/<action>, kèm fileToBase64 cho upload avatar", descEn: "Frontend transport for Cloudflare: replaces the Muse SDK with POST /api/<action>, plus fileToBase64 for avatar uploads" },
   { path: "cloudflare/frontend/package.json + vite.config.ts + index.html", descVi: "Khung build Vite + React 19 + Tailwind 4", descEn: "Vite + React 19 + Tailwind 4 build shell" },
   { path: "cloudflare/frontend/src/ (đầy đủ)", descVi: "Toàn bộ giao diện đã có sẵn trong gói: copy từ client/src của bản Muse và đã chuyển đổi cho Cloudflare — api.ts dùng POST /api/<action>, main.tsx render vào #root với QueryClient thường (không còn Muse SDK), các form dùng thuộc tính thường thay macro FIELDS. Đã kiểm chứng npm run build:frontend tạo được frontend/dist.", descEn: "The complete UI is already in the package: copied from the Muse build's client/src and adapted for Cloudflare — api.ts posts to /api/<action>, main.tsx renders into #root with a plain QueryClient (no Muse SDK), forms use plain attributes instead of the FIELDS macro. Verified: npm run build:frontend produces frontend/dist." },
@@ -183,14 +178,13 @@ const PACKAGE_FILES: { path: string; descVi: string; descEn: string }[] = [
 const ARCH: { icon: "grid" | "gear" | "book" | "layers"; title: string; descVi: string; descEn: string }[] = [
   { icon: "grid", title: "Pages / Static Assets", descVi: "Host giao diện React đã build (frontend/dist) — trang người dùng mở để dùng thử.", descEn: "Hosts the built React UI (frontend/dist) — the page testers open." },
   { icon: "gear", title: "Workers", descVi: "Chạy API /api/<action>: đăng nhập, không gian, từ vựng, donate, admin. Cùng tên action với bản Muse nên frontend chỉ đổi transport.", descEn: "Runs the /api/<action> API: auth, spaces, vocab, donations, admin. Same action names as the Muse build, so the frontend only swaps transport." },
-  { icon: "book", title: "D1 — laspace", descVi: "Database SQL lưu tài khoản + dữ liệu học. Tạo bằng wrangler d1 create, nạp bảng bằng schema.sql.", descEn: "SQL database for accounts + learning data. Created with wrangler d1 create, initialised from schema.sql." },
-  { icon: "layers", title: "R2 — laspace-avatars", descVi: "Lưu ảnh đại diện người dùng, Worker phục vụ tại /avatars/<key>.", descEn: "Stores user profile pictures, served by the Worker at /avatars/<key>." },
+  { icon: "book", title: "D1 — laspace", descVi: "Database SQL lưu tài khoản + dữ liệu học + ảnh đại diện dạng base64 (cột avatar_data). Database đã tạo sẵn trên Cloudflare, nạp bảng bằng schema.sql.", descEn: "SQL database for accounts + learning data + base64 profile pictures (avatar_data column). The database already exists on Cloudflare; initialise it from schema.sql." },
 ];
 
 const STEPS: { titleVi: string; titleEn: string; descVi: string; descEn: string }[] = [
   { titleVi: "1. Tải file ZIP về, giải nén và đẩy lên GitHub", titleEn: "1. Download the ZIP, unzip it and push to GitHub", descVi: "Bản trên repo hiện là gói cũ chưa có frontend/src nên chưa build chạy được. Bấm nút “Tải gói mã nguồn (.zip)” ở trên để tải gói hoàn chỉnh này (đã gồm frontend/src, build thử thành công) về máy, giải nén, rồi chạy khối lệnh Git ở dưới ngay trong thư mục vừa giải nén (cần đăng nhập GitHub của bạn). Đẩy xong, quay lại Cloudflare bấm Retry build.", descEn: "The version on the repo is the older package without frontend/src, so it cannot build yet. Use the “Download the source package (.zip)” button above to get this complete package (frontend/src included, test-built successfully), unzip it, then run the Git block below from inside the unzipped folder (needs your own GitHub login). After the push, go back to Cloudflare and press Retry build." },
-  { titleVi: "2. Tạo D1 + R2 trên Cloudflare", titleEn: "2. Create D1 + R2 on Cloudflare", descVi: "Compute → Workers & Pages để nối repo; Storage & databases → D1 tạo database “laspace”, R2 tạo bucket “laspace-avatars” — hoặc dùng lệnh wrangler ở dưới.", descEn: "Compute → Workers & Pages to connect the repo; Storage & databases → D1 creates the “laspace” database, R2 creates the “laspace-avatars” bucket — or use the wrangler commands below." },
-  { titleVi: "3. Gắn database_id vào wrangler.toml", titleEn: "3. Put the database_id in wrangler.toml", descVi: "Thay REPLACE_WITH_D1_ID bằng id thật Cloudflare cấp khi tạo D1.", descEn: "Replace REPLACE_WITH_D1_ID with the real id Cloudflare issued for the D1 database." },
+  { titleVi: "2. Database D1 đã sẵn sàng (không dùng R2)", titleEn: "2. The D1 database is ready (no R2)", descVi: "Database “laspace” đã được tạo sẵn trên Cloudflare (Storage & databases → D1). Ảnh đại diện lưu base64 ngay trong D1 nên không cần bucket R2, không cần nhập thẻ.", descEn: "The “laspace” database has already been created on Cloudflare (Storage & databases → D1). Profile pictures are stored as base64 inside D1, so no R2 bucket and no payment card are needed." },
+  { titleVi: "3. database_id đã điền sẵn trong wrangler.toml", titleEn: "3. The database_id is already in wrangler.toml", descVi: "ID thật 951a0597-ed73-44c1-ad5e-3ab8af78e648 đã nằm sẵn trong gói này — không còn chỗ REPLACE_WITH_D1_ID nào phải thay.", descEn: "The real id 951a0597-ed73-44c1-ad5e-3ab8af78e648 already ships in this package — there is no REPLACE_WITH_D1_ID left to fill in." },
   { titleVi: "4. Nạp schema vào D1", titleEn: "4. Load the schema into D1", descVi: "Chạy npm run db:init để tạo đủ 12 bảng.", descEn: "Run npm run db:init to create all 12 tables." },
   { titleVi: "5. Deploy", titleEn: "5. Deploy", descVi: "npm run deploy — Cloudflare trả về link dạng laspace.<tài-khoản>.workers.dev. Đó là link gửi cho người dùng thử: họ mở link, đăng ký tài khoản và học ngay.", descEn: "npm run deploy — Cloudflare returns a laspace.<account>.workers.dev link. That is the link to send testers: they open it, register and start learning." },
   { titleVi: "6. Tạo tài khoản Admin đầu tiên", titleEn: "6. Create the first admin account", descVi: "Gọi POST /api/seedAdminAccount với {name, email, password} khi chưa có admin nào — hoặc đăng ký tài khoản đầu tiên rồi nâng quyền trong D1.", descEn: "Call POST /api/seedAdminAccount with {name, email, password} while no admin exists — or register first, then promote the account in D1." },
@@ -202,7 +196,7 @@ export function DeployView({ lang }: { lang: Lang }) {
       <div className="card grid gap-2 p-3" style={{ background: "linear-gradient(120deg, rgba(47,107,255,0.16), rgba(124,58,237,0.16) 55%, rgba(255,138,61,0.16))" }}>
         <p className="font-display text-sm font-bold">{tx(lang, "Gói mã nguồn Cloudflare đã sẵn sàng", "The Cloudflare source package is ready")}</p>
         <p style={{ color: "var(--dim)" }}>
-          {tx(lang, "Toàn bộ LaSpace đã được đóng gói lại cho Cloudflare Pages + Workers + D1 + R2 trong thư mục cloudflare/ của dự án này (Worker API đầy đủ, schema D1 12 bảng, cấu hình wrangler, frontend hoàn chỉnh đã build thử thành công ra frontend/dist và README hướng dẫn). Chỉ còn bước đẩy bản mới này lên repo bằng tài khoản GitHub của bạn và bấm deploy là có link công khai cho người dùng thử.", "All of LaSpace has been repackaged for Cloudflare Pages + Workers + D1 + R2 in this project's cloudflare/ folder (full Worker API, 12-table D1 schema, wrangler config, the complete frontend — test-built successfully to frontend/dist — and a README guide). The only remaining steps are pushing this new version with your own GitHub account and deploying, which produces the public trial link.")}
+          {tx(lang, "Toàn bộ LaSpace đã được đóng gói lại cho Cloudflare Pages + Workers + D1 trong thư mục cloudflare/ của dự án này (Worker API đầy đủ, schema D1 12 bảng, cấu hình wrangler đã điền sẵn database_id thật, frontend hoàn chỉnh đã build thử thành công ra frontend/dist và README hướng dẫn). Ảnh đại diện lưu base64 trong D1 nên app chạy hoàn toàn miễn phí, không cần R2. Chỉ còn bước đẩy bản mới này lên repo bằng tài khoản GitHub của bạn và bấm deploy là có link công khai cho người dùng thử.", "All of LaSpace has been repackaged for Cloudflare Pages + Workers + D1 in this project's cloudflare/ folder (full Worker API, 12-table D1 schema, wrangler config with the real database_id already filled in, the complete frontend — test-built successfully to frontend/dist — and a README guide). Profile pictures are stored as base64 in D1, so the app runs entirely free with no R2. The only remaining steps are pushing this new version with your own GitHub account and deploying, which produces the public trial link.")}
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -217,7 +211,7 @@ export function DeployView({ lang }: { lang: Lang }) {
             <Icon name="link" size={13} /> github.com/june97ceo-cpu/laspace
           </a>
           <span className="chip">{tx(lang, "Repo: đã có bản cũ, chờ push bản hoàn chỉnh này", "Repo: holds the previous version, awaiting this complete one")}</span>
-          <span className="chip chip-violet">Pages + Workers + D1 + R2</span>
+          <span className="chip chip-violet">Pages + Workers + D1</span>
         </div>
         <p style={{ color: "var(--dim)" }}>
           {tx(lang, "File laspace-cloudflare.zip chứa trọn thư mục cloudflare/: wrangler.toml, schema.sql, worker/src/index.ts, frontend/, package.json và README hướng dẫn. Tải về → giải nén → đẩy lên repo bằng khối lệnh Git ở dưới → quay lại Cloudflare bấm Retry build.", "The laspace-cloudflare.zip file contains the complete cloudflare/ folder: wrangler.toml, schema.sql, worker/src/index.ts, frontend/, package.json and the README guide. Download → unzip → push to the repo with the Git block below → back on Cloudflare press Retry build.")}
@@ -265,7 +259,7 @@ export function DeployView({ lang }: { lang: Lang }) {
       <div className="card grid gap-3 p-3">
         <p className="font-display text-sm font-bold">{tx(lang, "Lệnh chạy (copy nguyên khối)", "Commands (copy each block as-is)")}</p>
         <CopyBlock label={tx(lang, "Giải nén xong, đẩy lên repo GitHub", "After unzipping, push to the GitHub repo")} code={PUSH_COMMANDS} />
-        <CopyBlock label={tx(lang, "Tạo D1 / R2 và deploy lên Cloudflare", "Create D1 / R2 and deploy to Cloudflare")} code={DEPLOY_COMMANDS} />
+        <CopyBlock label={tx(lang, "Nạp schema D1 và deploy lên Cloudflare", "Load the D1 schema and deploy to Cloudflare")} code={DEPLOY_COMMANDS} />
         <CopyBlock label="wrangler.toml" code={WRANGLER_TOML} />
       </div>
 

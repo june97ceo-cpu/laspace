@@ -1,6 +1,10 @@
 # LaSpace on Cloudflare — one Worker serves the API (/api/*) and the
 # static Pages build (frontend/dist) via Workers Static Assets.
 # Docs: https://developers.cloudflare.com/workers/static-assets/
+#
+# Free tier only: Pages + Workers + D1. There is NO R2 binding — profile
+# pictures are stored as base64 in D1 (users.avatar_data) and served by
+# the Worker at /avatars/<userId>, so no bucket or payment card is needed.
 name = "laspace"
 main = "worker/src/index.ts"
 compatibility_date = "2025-01-01"
@@ -10,20 +14,13 @@ directory = "./frontend/dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
-# --- D1: account + learning data -------------------------------------------
-# 1) npx wrangler d1 create laspace
-# 2) Paste the returned database_id below (replace REPLACE_WITH_D1_ID).
-# 3) npx wrangler d1 execute laspace --remote --file=./schema.sql
+# --- D1: account + learning data + avatar base64 ---------------------------
+# Database "laspace" already created on Cloudflare; load the tables once:
+#   npx wrangler d1 execute laspace --remote --file=./schema.sql
 [[d1_databases]]
 binding = "DB"
 database_name = "laspace"
-database_id = "REPLACE_WITH_D1_ID"
-
-# --- R2: profile pictures (avatars) ----------------------------------------
-# 1) npx wrangler r2 bucket create laspace-avatars
-[[r2_buckets]]
-binding = "AVATARS"
-bucket_name = "laspace-avatars"
+database_id = "951a0597-ed73-44c1-ad5e-3ab8af78e648"
 
 [vars]
 # Public origin of this deployment, used to build avatar URLs.
