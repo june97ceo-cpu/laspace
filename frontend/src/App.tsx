@@ -197,25 +197,25 @@ function AuthScreen({ onAuthed }: { onAuthed: (token: string, remember: boolean)
 
   return (
     <div
-      className="relative flex min-h-dvh flex-col items-center overflow-hidden px-4 py-10"
+      className="relative flex min-h-dvh flex-col items-center overflow-hidden px-4 py-5"
       style={{ background: "linear-gradient(160deg,#141b52 0%,#1e2a78 45%,#4c1d95 100%)", color: "#eef0ff" }}
     >
       <Starfield />
-      <div className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5">
+      <div className="relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4">
         <div className="flex items-center justify-center gap-3">
-          <img src={logoUrl} alt="Logo LaSpace" className="h-16 w-16 rounded-2xl shadow-lg" />
-          <span className="font-display font-extrabold leading-none" style={{ fontSize: "clamp(34px, 10vw, 48px)", color: "#ff8a3d", letterSpacing: 0.3 }}>LaSpace</span>
+          <img src={logoUrl} alt="Logo LaSpace" className="h-12 w-12 rounded-2xl shadow-lg" />
+          <span className="font-display font-extrabold leading-none" style={{ fontSize: "clamp(30px, 9vw, 40px)", color: "#ff8a3d", letterSpacing: 0.3 }}>LaSpace</span>
         </div>
         <p className="font-display whitespace-nowrap text-center font-bold leading-tight" style={{ fontSize: "clamp(13px, 4.1vw, 19px)" }}>
           Chào mừng bạn quay lại góc học của mình
         </p>
-        <h1 className="font-display text-center font-extrabold leading-[1.05]" style={{ fontSize: "clamp(28px, 8.5vw, 42px)" }}>
+        <h1 className="font-display text-center font-extrabold leading-[1.05]" style={{ fontSize: "clamp(25px, 7.5vw, 34px)" }}>
           Your Language,
           <br />
           <span style={{ color: "#ff8a3d" }}>Your Space.</span>
         </h1>
 
-        <form onSubmit={submit} className="card w-full grid gap-3.5 p-5" style={{ background: "rgba(16,20,54,0.88)", borderColor: "#2e3879", color: "#eef0ff" }}>
+        <form onSubmit={submit} className="card w-full grid gap-3.5 p-4" style={{ background: "rgba(16,20,54,0.88)", borderColor: "#2e3879", color: "#eef0ff" }}>
           {tab === "forgot" ? (
             <div className="flex items-center gap-2">
               <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setTab("login"); setError(""); setForgotSent(false); }} aria-label="Quay lại đăng nhập">
@@ -345,7 +345,7 @@ function AuthScreen({ onAuthed }: { onAuthed: (token: string, remember: boolean)
           </div>
         ) : null}
       </div>
-      <div className="relative z-10 pb-2 pt-8">
+      <div className="relative z-10 pb-1 pt-4">
         <BrandTagline />
       </div>
     </div>
